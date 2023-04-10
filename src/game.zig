@@ -6,13 +6,105 @@ const rl = @cImport({
     @cInclude("raylib.h");
 });
 
-pub const Game = struct {};
+///
+///
+///
+const GameState = enum(u8) {
+    GS_UNINIT = 0x01,
+    GS_INIT = 0x02,
+    GS_BEFORE_START = 0x03,
+    GS_PLAYING = 0x04,
+    GS_PLAYER_WINS = 0x05,
+    GS_PAUSE = 0x06,
+};
+
+///
+///
+///
+const MiscSettings = struct {
+    game_fps: usize,
+};
+
+///
+///
+///
+const Game = struct {
+    player1: player.Player,
+    player2: player.Player,
+    // scoreboard: Scoreboard,
+    table_rect_before_screen_changed: rl.Rectangle,
+    table_rect: rl.Rectangle,
+    // ball: Ball,
+    state: GameState,
+    is_fullscreen: bool,
+    is_player1_wins_last_round: bool,
+    you_win_sound_effect: ?rl.Sound,
+};
 
 ///
 ///
 ///
 pub fn create_game() Game {
-    return Game{};
+    // var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    // defer arena.deinit();
+    //
+    // const env_map = try arena.allocator().create(std.process.EnvMap);
+    // env_map.* = try std.process.getEnvMap(arena.allocator());
+    // defer env_map.deinit(); // technically unnecessary when using ArenaAllocator
+
+    // const name = env_map.get("HELLO") orelse "world";
+    return Game{
+        .player1 = player.Player{
+            .type = player.PlayerType.PT_LEFT,
+            .name = config.PLAYER_1_NAME,
+            .score = 0,
+            // .rackets = {0},
+            .default_racket = player.Racket{
+                .color = config.RACKET_UI_COLOR,
+                .rect = rl.Rectangle{
+                    .x = 0,
+                    .y = 0,
+                    .width = 0,
+                    .height = 0,
+                },
+                .rect_texture = null,
+            },
+        },
+        .player2 = player.Player{
+            .type = player.PlayerType.PT_RIGHT,
+            .name = config.PLAYER_2_NAME,
+            .score = 0,
+            // .rackets = {0},
+            .default_racket = player.Racket{
+                .color = config.RACKET_UI_COLOR,
+                .rect = rl.Rectangle{
+                    .x = 0,
+                    .y = 0,
+                    .width = 0,
+                    .height = 0,
+                },
+                .rect_texture = null,
+            },
+        },
+        // scoreboard: Scoreboard,
+        .table_rect_before_screen_changed = rl.Rectangle{
+            .x = 0,
+            .y = 0,
+            .width = 0,
+            .height = 0,
+        },
+        .table_rect = rl.Rectangle{
+            .x = 0,
+            .y = 0,
+            .width = 0,
+            .height = 0,
+        },
+        // ball: Ball,
+        .state = GameState.GS_UNINIT,
+        .is_fullscreen = false,
+        .is_player1_wins_last_round = false,
+        .you_win_sound_effect = null,
+    };
 }
 
 ///

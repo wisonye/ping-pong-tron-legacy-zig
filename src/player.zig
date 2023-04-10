@@ -7,7 +7,7 @@ const config = @import("config.zig");
 ///
 ///
 ///
-const PlayerType = enum {
+pub const PlayerType = enum {
     PT_LEFT,
     PT_RIGHT,
 };
@@ -24,21 +24,21 @@ const RacketUpdateType = enum {
 ///
 ///
 ///
-const Racket = struct {
+pub const Racket = struct {
     color: rl.Color,
     rect: rl.Rectangle,
-    rect_texture: rl.Texture2D,
+    rect_texture: ?rl.Texture2D,
 };
 
 ///
 ///
 ///
-const Player = struct {
+pub const Player = struct {
     type: PlayerType,
     // name: *const[]u8,
     name: []const u8,
     score: isize,
-    level: usize,
+    // level: usize,
     // The default one
     default_racket: Racket,
     // Player may have many rackets after level-up

@@ -4,10 +4,6 @@ const player = @import("player.zig");
 const game = @import("game.zig");
 const print = std.debug.print;
 
-const rl = @cImport({
-    @cInclude("raylib.h");
-});
-
 ///
 ///
 ///
