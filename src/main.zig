@@ -1,24 +1,61 @@
 const std = @import("std");
+const config = @import("config.zig");
+const player = @import("player.zig");
+const print = std.debug.print;
 
+const rl = @cImport({
+    @cInclude("raylib.h");
+});
+
+///
+///
+///
+fn unload_raylib_resources() void {
+    rl.CloseAudioDevice();
+    rl.CloseWindow();
+    print("\n>>> Unload raylib resources [Done]", .{});
+}
+
+///
+///
+///
 pub fn main() !void {
-    // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
+    rl.InitWindow(
+        config.GAME_UI_INIT_SCREEN_WIDTH,
+        config.GAME_UI_INIT_SCREEN_HEIGHT,
+        "Ping pong tron legacy",
+    );
 
-    // stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-    const stdout = bw.writer();
+    // Window states: No frame and buttons
+    rl.SetWindowState(rl.FLAG_WINDOW_UNDECORATED);
 
-    try stdout.print("Run `zig build test` to run the tests.\n", .{});
+    // Set our game FPS (frames-per-second)
+    rl.SetTargetFPS(config.GAME_FPS);
 
-    try bw.flush(); // don't forget to flush!
+    // Initialize audio device
+    rl.InitAudioDevice();
+    defer unload_raylib_resources();
+
+    while (!rl.WindowShouldClose()) {
+        rl.BeginDrawing();
+
+        //
+        // Clean last frame
+        //
+        rl.ClearBackground(config.GAME_UI_BACKGROUND_COLOR);
+
+        //
+        // Redraw the entire game
+        //
+        rl.DrawRectangle(10, 10, 100, 100, config.TRON_ORANGE);
+
+        rl.EndDrawing();
+    }
 }
 
-test "simple test" {
-    var list = std.ArrayList(i32).init(std.testing.allocator);
-    defer list.deinit(); // try commenting this out and see if zig detects the memory leak!
-    try list.append(42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
-}
+// test "simple test" {
+//     var list = std.ArrayList(i32).init(std.testing.allocator);
+//     defer list.deinit(); // try commenting this out and see if zig detects the memory leak!
+//     try list.append(42);
+//     try std.testing.expectEqual(@as(i32, 42), list.pop());
+// }

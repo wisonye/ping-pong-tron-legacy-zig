@@ -16,13 +16,25 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     const exe = b.addExecutable(.{
-        .name = "zig",
+        .name = "ping-pong-tron-legacy",
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
         .root_source_file = .{ .path = "src/main.zig" },
         .target = target,
         .optimize = optimize,
     });
+
+    //
+    // For linking `raylib` and its dependencies
+    //
+    // exe.addIncludePath("/usr/include");
+    // exe.addLibraryPath("/usr/lib");
+    exe.linkSystemLibrary("raylib");
+    exe.linkSystemLibrary("GL");
+    exe.linkSystemLibrary("rt");
+    // exe.linkSystemLibrary("dl");
+    // exe.linkSystemLibrary("m");
+    // exe.linkSystemLibrary("X11");
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
