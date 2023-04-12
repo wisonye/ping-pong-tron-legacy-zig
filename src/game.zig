@@ -2,6 +2,7 @@ const std = @import("std");
 const config = @import("config.zig");
 const player = @import("player.zig");
 const print = std.debug.print;
+const ball = @import("ball.zig");
 const rl = @cImport({
     @cInclude("raylib.h");
 });
@@ -34,7 +35,7 @@ pub const Game = struct {
     // scoreboard: Scoreboard,
     table_rect_before_screen_changed: rl.Rectangle,
     table_rect: rl.Rectangle,
-    // ball: Ball,
+    ball: ball.Ball,
     state: GameState,
     is_fullscreen: bool,
     is_player1_wins_last_round: bool,
@@ -52,6 +53,7 @@ pub const Game = struct {
         // defer env_map.deinit(); // technically unnecessary when using ArenaAllocator
 
         // const name = env_map.get("HELLO") orelse "world";
+        const ball_radius = config.BALL_UI_BALL_RADIUS;
         return Game{
             .player1 = player.Player{
                 .type = player.PlayerType.PT_LEFT,
@@ -98,7 +100,30 @@ pub const Game = struct {
                 .width = 0,
                 .height = 0,
             },
-            // ball: Ball,
+            .ball = ball.Ball{
+                .center = rl.Vector2{ .x = -1.0, .y = -1.0 },
+                .radius = ball_radius,
+                .velocity_x = config.BALL_UI_BALL_VELOCITY_X,
+                .velocity_y = config.BALL_UI_BALL_VELOCITY_Y,
+                .lightning_ball_rotation_angle = 0.0,
+                .current_hits = 0,
+                .current_velocities_increase = 0,
+                .enabled_fireball = false,
+                .enabled_lightning_ball = false,
+                .lightning_ball = null,
+                .enable_fireball_sound_effect = null,
+                .enable_lightning_ball_sound_effect = null,
+                .hit_racket_sound_effect = null,
+                .lighting_tail = null,
+
+                //
+                // `alpha_mask` is a black and white color image that uses for
+                // blending operations, it HAS TO be created after the
+                // `InitWindow` call. That means it creates inside
+                // `Game_init()`, not here!!!
+                //
+                .alpha_mask = null,
+            },
             .state = GameState.GS_UNINIT,
             .is_fullscreen = false,
             .is_player1_wins_last_round = false,
@@ -152,9 +177,9 @@ pub const Game = struct {
         //
         // self.you_win_sound_effect = LoadSound(YOU_WIN_SOUND_EFFECT_1);
         self.you_win_sound_effect = rl.LoadSound(config.YOU_WIN_SOUND_EFFECT_2);
-        // self.ball.enable_fireball_sound_effect = rl.LoadSound(config.ENABLE_FIREBALL_SOUND_EFFECT);
-        // self.ball.enable_lightning_ball_sound_effect = rl.LoadSound(config.ENABLE_LIGHTNING_BALL_SOUND_EFFECT);
-        // self.ball.hit_racket_sound_effect = rl.LoadSound(config.BALL_HIT_RACKET_SOUND_EFFECT);
+        self.ball.enable_fireball_sound_effect = rl.LoadSound(config.ENABLE_FIREBALL_SOUND_EFFECT);
+        self.ball.enable_lightning_ball_sound_effect = rl.LoadSound(config.ENABLE_LIGHTNING_BALL_SOUND_EFFECT);
+        self.ball.hit_racket_sound_effect = rl.LoadSound(config.BALL_HIT_RACKET_SOUND_EFFECT);
 
         // Set tracing log level
         rl.SetTraceLogLevel(rl.LOG_DEBUG);
@@ -166,22 +191,65 @@ pub const Game = struct {
 
         // Set to `GS_BEFORE_START`
         self.state = GameState.GS_BEFORE_START;
+
+        //
+        // As I want to draw the ball with gradient visual effects (like a halo)
+        // and a lighting trail that follows the moving ball, that's why do I need
+        // to create an alpha mask image (with black and white color) as the
+        // blending mask.
+        //
+        // - The `density` affects the halo border length!!!
+        //
+        // - The size of the alpha mask must be the same size of the ball
+        //
+        // - The lighting tail is just a bunch of particle instances, each particle
+        //   has the init alpha value and size, and the size should be smaller than
+        //   the ball to make it looks nicer.
+        //
+        const density = 0.5;
+        const ball_alpha_mask_image = rl.GenImageGradientRadial(
+            @floatToInt(c_int, self.ball.radius * 2),
+            @floatToInt(c_int, self.ball.radius * 2),
+            density,
+            rl.WHITE,
+            rl.BLACK,
+        );
+        self.ball.alpha_mask = rl.LoadTextureFromImage(ball_alpha_mask_image);
+        rl.UnloadImage(ball_alpha_mask_image);
+
+        //
+        // Lightning ball
+        //
+        const lightning_ball_image = rl.LoadImage(config.BALL_UI_LIGHTNING_BALL);
+        self.ball.lightning_ball = rl.LoadTextureFromImage(lightning_ball_image);
+        rl.UnloadImage(lightning_ball_image);
+
+        //
+        // Racket gradient texture
+        //
+        var racket_image = rl.LoadImage(config.RACKET_UI_LASER_RACKET_TEXTURE);
+        rl.ImageResize(&racket_image, config.RACKET_UI_WIDTH, config.RACKET_UI_HEIGHT);
+        self.player1.default_racket.rect_texture =
+            rl.LoadTextureFromImage(racket_image);
+        self.player2.default_racket.rect_texture =
+            rl.LoadTextureFromImage(racket_image);
+        rl.UnloadImage(racket_image);
+
+        rl.TraceLog(rl.LOG_DEBUG, ">>> [ Game.init ] - Game initialization [ done ]");
     }
 
     ///
     ///
     ///
     pub fn exit(self: *const Game) void {
-        // rl.UnloadTexture(self.ball.alpha_mask);
-        // rl.UnloadTexture(self.ball.lightning_ball);
-        if (self.you_win_sound_effect) |sound| {
-            rl.UnloadSound(sound);
-        }
-        // rl.UnloadSound(self.ball.enable_fireball_sound_effect); // Unload sound data
-        // rl.UnloadSound(self.ball.enable_lightning_ball_sound_effect);
-        // rl.UnloadSound(self.ball.hit_racket_sound_effect); // Unload sound data
-        // rl.UnloadTexture(self.player1.default_racket.rect_texture);
-        // rl.UnloadTexture(self.player2.default_racket.rect_texture);
+        if (self.ball.alpha_mask) |value| rl.UnloadTexture(value);
+        if (self.ball.lightning_ball) |value| rl.UnloadTexture(value);
+        if (self.you_win_sound_effect) |sound| rl.UnloadSound(sound);
+        if (self.ball.enable_fireball_sound_effect) |value| rl.UnloadSound(value); // Unload sound data
+        if (self.ball.enable_lightning_ball_sound_effect) |value| rl.UnloadSound(value);
+        if (self.ball.hit_racket_sound_effect) |value| rl.UnloadSound(value); // Unload sound data
+        if (self.player1.default_racket.rect_texture) |value| rl.UnloadTexture(value);
+        if (self.player2.default_racket.rect_texture) |value| rl.UnloadTexture(value);
         rl.CloseAudioDevice();
 
         //
