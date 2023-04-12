@@ -1,17 +1,17 @@
 const std = @import("std");
 const config = @import("config.zig");
 const player = @import("player.zig");
-const game = @import("game.zig");
+const game_module = @import("game.zig").Game;
 const print = std.debug.print;
 
 ///
 ///
 ///
 pub fn main() !void {
-    const my_game = game.create_game();
-    game.init(&my_game);
-    defer game.exit(&my_game);
-    game.run(&my_game);
+    const my_game = game_module.create_game();
+    my_game.init();
+    defer my_game.exit();
+    my_game.run();
 }
 
 // test "simple test" {
