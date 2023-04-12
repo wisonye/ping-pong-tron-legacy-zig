@@ -131,8 +131,7 @@ pub const Game = struct {
     ///
     ///
     ///
-    pub fn init(self: *const Game) void {
-        _ = self;
+    pub fn init(self: *Game) void {
         rl.InitWindow(
             config.GAME_UI_INIT_SCREEN_WIDTH,
             config.GAME_UI_INIT_SCREEN_HEIGHT,
@@ -147,6 +146,49 @@ pub const Game = struct {
 
         // Initialize audio device
         rl.InitAudioDevice();
+
+        //
+        // Load sound effects
+        //
+        // self.you_win_sound_effect = LoadSound(YOU_WIN_SOUND_EFFECT_1);
+        self.you_win_sound_effect = rl.LoadSound(config.YOU_WIN_SOUND_EFFECT_2);
+        // self.ball.enable_fireball_sound_effect = rl.LoadSound(config.ENABLE_FIREBALL_SOUND_EFFECT);
+        // self.ball.enable_lightning_ball_sound_effect = rl.LoadSound(config.ENABLE_LIGHTNING_BALL_SOUND_EFFECT);
+        // self.ball.hit_racket_sound_effect = rl.LoadSound(config.BALL_HIT_RACKET_SOUND_EFFECT);
+
+        // Set tracing log level
+        rl.SetTraceLogLevel(rl.LOG_DEBUG);
+
+        // self.print_debug_info();
+
+        // Hide the cursor
+        rl.HideCursor();
+
+        // Set to `GS_BEFORE_START`
+        self.state = GameState.GS_BEFORE_START;
+    }
+
+    ///
+    ///
+    ///
+    pub fn exit(self: *const Game) void {
+        // rl.UnloadTexture(self.ball.alpha_mask);
+        // rl.UnloadTexture(self.ball.lightning_ball);
+        if (self.you_win_sound_effect) |sound| {
+            rl.UnloadSound(sound);
+        }
+        // rl.UnloadSound(self.ball.enable_fireball_sound_effect); // Unload sound data
+        // rl.UnloadSound(self.ball.enable_lightning_ball_sound_effect);
+        // rl.UnloadSound(self.ball.hit_racket_sound_effect); // Unload sound data
+        // rl.UnloadTexture(self.player1.default_racket.rect_texture);
+        // rl.UnloadTexture(self.player2.default_racket.rect_texture);
+        rl.CloseAudioDevice();
+
+        //
+        // Close window and OpenGL context
+        //
+        rl.CloseWindow();
+        rl.TraceLog(rl.LOG_DEBUG, ">>> [ Game.exit ] - Unload raylib resources [Done]");
     }
 
     ///
@@ -169,15 +211,7 @@ pub const Game = struct {
 
             rl.EndDrawing();
         }
-    }
 
-    ///
-    ///
-    ///
-    pub fn exit(self: *const Game) void {
-        _ = self;
-        rl.CloseAudioDevice();
-        rl.CloseWindow();
-        print("\n>>> [ Game.exit ] Unload raylib resources [Done]", .{});
+        rl.TraceLog(rl.LOG_DEBUG, ">>> [ Game.run ] - Exit the game loop");
     }
 };

@@ -8,7 +8,7 @@ const print = std.debug.print;
 ///
 ///
 pub fn main() !void {
-    const my_game = game_module.create_game();
+    var my_game = game_module.create_game();
     my_game.init();
     defer my_game.exit();
     my_game.run();
