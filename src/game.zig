@@ -1,8 +1,10 @@
 const std = @import("std");
 const config = @import("config.zig");
 const player = @import("player.zig");
+const scoreboard = @import("scoreboard.zig");
 const print = std.debug.print;
 const ball = @import("ball.zig");
+const utils = @import("utils.zig");
 const rl = @cImport({
     @cInclude("raylib.h");
 });
@@ -32,7 +34,7 @@ const MiscSettings = struct {
 pub const Game = struct {
     player1: player.Player,
     player2: player.Player,
-    // scoreboard: Scoreboard,
+    scoreboard: scoreboard.Scoreboard,
     table_rect_before_screen_changed: rl.Rectangle,
     table_rect: rl.Rectangle,
     ball: ball.Ball,
@@ -54,7 +56,7 @@ pub const Game = struct {
 
         // const name = env_map.get("HELLO") orelse "world";
         const ball_radius = config.BALL_UI_BALL_RADIUS;
-        return Game{
+        var result = Game{
             .player1 = player.Player{
                 .type = player.PlayerType.PT_LEFT,
                 .name = config.PLAYER_1_NAME,
@@ -87,7 +89,10 @@ pub const Game = struct {
                     .rect_texture = null,
                 },
             },
-            // scoreboard: Scoreboard,
+            .scoreboard = scoreboard.Scoreboard{
+                .player1 = null,
+                .player2 = null,
+            },
             .table_rect_before_screen_changed = rl.Rectangle{
                 .x = 0,
                 .y = 0,
@@ -129,6 +134,10 @@ pub const Game = struct {
             .is_player1_wins_last_round = false,
             .you_win_sound_effect = null,
         };
+
+        result.scoreboard.player1 = &result.player1;
+        result.scoreboard.player2 = &result.player2;
+        return result;
     }
 
     ///
@@ -184,8 +193,6 @@ pub const Game = struct {
         // Set tracing log level
         rl.SetTraceLogLevel(rl.LOG_DEBUG);
 
-        // self.print_debug_info();
-
         // Hide the cursor
         rl.HideCursor();
 
@@ -236,6 +243,8 @@ pub const Game = struct {
         rl.UnloadImage(racket_image);
 
         rl.TraceLog(rl.LOG_DEBUG, ">>> [ Game.init ] - Game initialization [ done ]");
+
+        self.print_debug_info();
     }
 
     ///
@@ -281,5 +290,110 @@ pub const Game = struct {
         }
 
         rl.TraceLog(rl.LOG_DEBUG, ">>> [ Game.run ] - Exit the game loop");
+    }
+
+    ///
+    ///
+    ///
+    fn print_debug_info(self: *const Game) void {
+        //
+        // Game state
+        //
+        var state_buf: [20]u8 = undefined;
+        const state_str = switch (self.state) {
+            GameState.GS_UNINIT => std.fmt.bufPrint(&state_buf, "GS_UNINIT", .{}) catch "",
+            GameState.GS_INIT => std.fmt.bufPrint(&state_buf, "GS_INIT", .{}) catch "",
+            GameState.GS_BEFORE_START => std.fmt.bufPrint(&state_buf, "GS_BEFORE_START", .{}) catch "",
+            GameState.GS_PLAYING => std.fmt.bufPrint(&state_buf, "GS_PLAYING", .{}) catch "",
+            GameState.GS_PLAYER_WINS => std.fmt.bufPrint(&state_buf, "GS_PLAYER_WINS", .{}) catch "",
+            GameState.GS_PAUSE => std.fmt.bufPrint(&state_buf, "GS_PAUSE", .{}) catch "",
+        };
+
+        //
+        // Player1
+        //
+        var player_1_buf: [300]u8 = undefined;
+        const player_1_str = utils.get_player_string(&self.player1, &player_1_buf);
+        // print("\n >>>> player_1_str: {s}", .{player_1_str});
+
+        //
+        // Player2
+        //
+        var player_2_buf: [300]u8 = undefined;
+        const player_2_str = utils.get_player_string(&self.player2, &player_2_buf);
+        // print("\n >>>> player_2_str: {s}", .{player_2_str});
+
+        //
+        // Ball
+        //
+        var ball_buf: [1024]u8 = undefined;
+        var ball_color_buf: [10]u8 = undefined;
+        var fireball_color_buf: [10]u8 = undefined;
+
+        const ball_color_str = std.fmt.bufPrint(
+            &ball_color_buf,
+            "0x{X:0>2}{X:0>2}{X:0>2}{X:0>2}",
+            .{
+                config.BALL_UI_BALL_COLOR.r,
+                config.BALL_UI_BALL_COLOR.g,
+                config.BALL_UI_BALL_COLOR.b,
+                config.BALL_UI_BALL_COLOR.a,
+            },
+        ) catch "";
+        const fireball_color_str = std.fmt.bufPrint(
+            &fireball_color_buf,
+            "0x{X:0>2}{X:0>2}{X:0>2}{X:0>2}",
+            .{
+                config.BALL_UI_FIREBALL_COLOR.r,
+                config.BALL_UI_FIREBALL_COLOR.g,
+                config.BALL_UI_FIREBALL_COLOR.b,
+                config.BALL_UI_FIREBALL_COLOR.a,
+            },
+        ) catch "";
+
+        const ball_str = std.fmt.bufPrint(
+            &ball_buf,
+            "\tball: {{\n\t\tcenter: {{ x: {d:.2}, y: {d:.2} }}\n\t\tradius: " ++
+                "{d:.2}\n\t\tcolor: {s}\n\t\tfireball color: {s}\n\t\tvelocity_x: " ++
+                "{d:.2}\n\t\tvelocity_y: {d:.2}\n\t\thits_before_increase_velocity: " ++
+                "{}\n\t\tvelocities_increase_to_enable_fireball: " ++
+                "{}\n\t\tvelocity_acceleration: " ++
+                "{}\n\t\tlighting_tail_particle_count: " ++
+                "{}\n\t\tlighting_tail_particle_init_alpha: " ++
+                "{d:.2}\n\t\tlighting_tail_particle_size: {d:.2}\n\t}}",
+            .{
+                self.ball.center.x,
+                self.ball.center.y,
+                self.ball.radius,
+                ball_color_str,
+                fireball_color_str,
+                config.BALL_UI_BALL_VELOCITY_X,
+                config.BALL_UI_BALL_VELOCITY_Y,
+                config.BALL_UI_HITS_BEFORE_INCREASE_VELOCITY,
+                config.BALL_UI_VELOCITIES_INCREASE_TO_ENABLE_FIREBALL,
+                config.BALL_UI_VELOCITY_ACCELERATION,
+                config.BALL_UI_LIGHTING_TAIL_PARTICLE_COUNT,
+                config.BALL_UI_LIGHTING_TAIL_PRATICLE_INIT_ALPHA,
+                config.BALL_UI_LIGHTING_TAIL_PRATICLE_SIZE,
+            },
+        ) catch "";
+        // print("\n >>>> ball_str: {s}", .{ball_str});
+
+        //
+        // Debug info
+        //
+        var debug_buf = [_:0]u8{0} ** 1024;
+        var debug_str = std.fmt.bufPrint(&debug_buf, "\n{{\n\tstate: {s}\n{s}\n{s}\n{s}\n}}", .{
+            state_str,
+            player_1_str,
+            player_2_str,
+            ball_str,
+        }) catch "";
+
+        rl.TraceLog(
+            rl.LOG_DEBUG,
+            ">>> [ Game.print_debug_info ] - %s",
+            @ptrCast([*c]const u8, debug_str),
+        );
     }
 };
