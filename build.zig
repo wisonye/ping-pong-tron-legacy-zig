@@ -1,4 +1,5 @@
 const std = @import("std");
+const print = std.debug.print;
 
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
@@ -29,12 +30,22 @@ pub fn build(b: *std.Build) void {
     //
     // exe.addIncludePath("/usr/include");
     // exe.addLibraryPath("/usr/lib");
-    exe.linkSystemLibrary("raylib");
-    exe.linkSystemLibrary("GL");
-    exe.linkSystemLibrary("rt");
-    // exe.linkSystemLibrary("dl");
-    // exe.linkSystemLibrary("m");
-    // exe.linkSystemLibrary("X11");
+
+    if (exe.target.isDarwin()) {
+        exe.linkSystemLibrary("raylib");
+        exe.linkFramework("OpenGL");
+        exe.linkFramework("Cocoa");
+        exe.linkFramework("IOKit");
+        exe.linkFramework("CoreAudio");
+        exe.linkFramework("CoreVideo");
+    } else if (exe.target.isLinux()) {
+        exe.linkSystemLibrary("raylib");
+        exe.linkSystemLibrary("GL");
+        exe.linkSystemLibrary("rt");
+        // exe.linkSystemLibrary("dl");
+        // exe.linkSystemLibrary("m");
+        // exe.linkSystemLibrary("X11");
+    }
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
