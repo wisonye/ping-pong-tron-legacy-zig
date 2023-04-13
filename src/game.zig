@@ -89,10 +89,7 @@ pub const Game = struct {
                     .rect_texture = null,
                 },
             },
-            .scoreboard = scoreboard.Scoreboard{
-                .player1 = null,
-                .player2 = null,
-            },
+            .scoreboard = scoreboard.Scoreboard{},
             .table_rect_before_screen_changed = rl.Rectangle{
                 .x = 0,
                 .y = 0,
@@ -135,8 +132,6 @@ pub const Game = struct {
             .you_win_sound_effect = null,
         };
 
-        result.scoreboard.player1 = &result.player1;
-        result.scoreboard.player2 = &result.player2;
         return result;
     }
 
@@ -271,8 +266,26 @@ pub const Game = struct {
     ///
     ///
     ///
-    pub fn run(self: *const Game) void {
+    fn logic(self: *const Game) void {
         _ = self;
+    }
+
+    ///
+    ///
+    ///
+    fn redraw(self: *const Game) void {
+
+        //
+        // Scoreboard
+        //
+        const sb_rect = self.scoreboard.redraw(&self.player1, &self.player2);
+        _ = sb_rect;
+    }
+
+    ///
+    ///
+    ///
+    pub fn run(self: *const Game) void {
         while (!rl.WindowShouldClose()) {
             rl.BeginDrawing();
 
@@ -284,7 +297,7 @@ pub const Game = struct {
             //
             // Redraw the entire game
             //
-            rl.DrawRectangle(10, 10, 100, 100, config.TRON_ORANGE);
+            self.redraw();
 
             rl.EndDrawing();
         }
