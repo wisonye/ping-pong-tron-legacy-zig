@@ -46,20 +46,15 @@ pub const Game = struct {
     ///
     ///
     ///
-    pub fn create_game() Game {
-        // var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-        // defer arena.deinit();
-        //
-        // const env_map = try arena.allocator().create(std.process.EnvMap);
-        // env_map.* = try std.process.getEnvMap(arena.allocator());
-        // defer env_map.deinit(); // technically unnecessary when using ArenaAllocator
-
-        // const name = env_map.get("HELLO") orelse "world";
-        const ball_radius = config.BALL_UI_BALL_RADIUS;
+    pub fn create_game(
+        player_1_name: []const u8,
+        player_2_name: []const u8,
+        ball_radius: f32,
+    ) !Game {
         var result = Game{
             .player1 = player.Player{
                 .type = player.PlayerType.PT_LEFT,
-                .name = config.PLAYER_1_NAME,
+                .name = player_1_name,
                 .score = 0,
                 // .rackets = {0},
                 .default_racket = player.Racket{
@@ -75,7 +70,7 @@ pub const Game = struct {
             },
             .player2 = player.Player{
                 .type = player.PlayerType.PT_RIGHT,
-                .name = config.PLAYER_2_NAME,
+                .name = player_2_name,
                 .score = 0,
                 // .rackets = {0},
                 .default_racket = player.Racket{

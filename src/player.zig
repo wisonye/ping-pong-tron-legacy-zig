@@ -36,7 +36,7 @@ pub const Racket = struct {
 pub const Player = struct {
     type: PlayerType,
     // name: *const[]u8,
-    name: [:0]const u8,
+    name: []const u8,
     score: isize,
     // level: usize,
     // The default one
