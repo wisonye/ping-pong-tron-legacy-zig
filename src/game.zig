@@ -123,7 +123,7 @@ pub const Game = struct {
     ///
     ///
     ///
-    fn toggle_fullscreen(self: *const Game) void {
+    fn toggle_fullscreen(self: *Game) void {
         if (!self.is_fullscreen) {
             const monitor = rl.GetCurrentMonitor();
             rl.SetWindowSize(
@@ -251,14 +251,120 @@ pub const Game = struct {
     ///
     ///
     ///
-    fn logic(self: *const Game) void {
-        _ = self;
+    fn logic(self: *Game) void {
+        //
+        // Press 'ctrl+f' to toggle fullscreen
+        //
+        if (rl.IsKeyDown(rl.KEY_LEFT_CONTROL) and rl.IsKeyPressed(rl.KEY_F)) {
+            // Save the `table_rect` before toggling fullscreen
+            self.table_rect_before_screen_changed = self.table_rect;
+
+            //
+            toggle_fullscreen(self);
+            rl.TraceLog(
+                rl.LOG_DEBUG,
+                ">>> [ Game_logic ] - Toggle fullscreen, screen_width: %d, screen_height: %d",
+                rl.GetScreenWidth(),
+                rl.GetScreenHeight(),
+            );
+
+            //
+            // Update `game.table_rect`
+            //
+            const new_sb_rect = scoreboard.Scoreboard.recalculate_rect();
+            self.table_rect = table.Table.recalculate_rect(&new_sb_rect);
+
+            //
+            // Sync racket position
+            //
+            self.player1.update_racket_after_screen_size_changed(
+                &self.table_rect,
+                &self.table_rect_before_screen_changed,
+            );
+            self.player2.update_racket_after_screen_size_changed(
+                &self.table_rect,
+                &self.table_rect_before_screen_changed,
+            );
+        }
+
+        //
+        // Press 'space' to start game
+        //
+        if (rl.IsKeyPressed(rl.KEY_SPACE) and
+            (self.state == types.GameState.GS_BEFORE_START or self.state == types.GameState.GS_PLAYER_WINS))
+        {
+            self.state = types.GameState.GS_PLAYING;
+            // Ball_restart(&game.ball, &game.table_rect);
+            self.player1.update_racket(&self.table_rect, player.RacketUpdateType.RUT_RESET);
+            self.player2.update_racket(&self.table_rect, player.RacketUpdateType.RUT_RESET);
+            self.print_debug_info();
+        }
+
+        // //
+        // // Game is playing, update all states
+        // //
+        // if (game.state == GS_PLAYING) {
+        //     // Update ball
+        //     Ball *ball = &game.ball;
+        //     bool is_player1_win = false;
+        //     bool is_player2_win = false;
+        //     Ball_update(ball, &game.table_rect, &game.player1, &game.player2,
+        //                 &is_player1_win, &is_player2_win);
+        //     if (is_player1_win) {
+        //         game.player1.score += 1;
+        //         game.state = GS_PLAYER_WINS;
+        //         game.is_player1_wins_last_round = true;
+        //         PlaySound(game.you_win_sound_effect);
+        //         return;
+        //     } else if (is_player2_win) {
+        //         game.player2.score += 1;
+        //         game.state = GS_PLAYER_WINS;
+        //         game.is_player1_wins_last_round = false;
+        //         PlaySound(game.you_win_sound_effect);
+        //         return;
+        //     }
+
+        //     // Update lighting tail
+        //     Ball_update_lighting_tail(ball);
+
+        //     /* TraceLog(LOG_DEBUG, */
+        //     /*          ">>> [ Game_logic ] - ball center: { x: %.2f, y: %.2f, " */
+        //     /*          "speed_x: %.2f, speed_Y: %.2f}", */
+        //     /*          ball.center.x, ball.center.y, ball.speed_x,
+        //      * ball.speed_y); */
+
+        //     //
+        //     // Update racket postion
+        //     //
+        //     if (IsKeyDown(PLAYER_2_UP_KEY)) {
+        //         Player_update_racket(&game.player2, &game.table_rect,
+        //                              RUT_MOVE_UP);
+        //     }
+        //     if (IsKeyDown(PLAYER_2_DOWN_KEY)) {
+        //         Player_update_racket(&game.player2, &game.table_rect,
+        //                              RUT_MOVE_DOWN);
+        //     }
+        //     if (IsKeyDown(PLAYER_1_UP_KEY)) {
+        //         Player_update_racket(&game.player1, &game.table_rect,
+        //                              RUT_MOVE_UP);
+        //     }
+        //     if (IsKeyDown(PLAYER_1_DOWN_KEY)) {
+        //         Player_update_racket(&game.player1, &game.table_rect,
+        //                              RUT_MOVE_DOWN);
+        //     }
+        // }
+
+        // //
+        // // Player wins, update score
+        // //
+        // if (game.state == GS_PLAYING) {
+        // }
     }
 
     ///
     ///
     ///
-    fn redraw(self: *const Game) void {
+    fn redraw(self: *Game) void {
 
         //
         // Scoreboard
@@ -275,14 +381,49 @@ pub const Game = struct {
             self.player2.name,
             &sb_rect,
         );
-        _ = table_rect;
+
+        //
+        // Player rackets
+        //
+        self.player1.redraw();
+        self.player2.redraw();
+
+        //
+        // Ball
+        //
+        // Ball *ball = &game.ball;
+        // Ball_redraw(ball);
+
+        //
+        // Update `game.table_rect` if changed
+        //
+        // TraceLog(LOG_DEBUG,
+        //          ">>> [ Game_redraw ] - table_rect: {x: %.2f, y: %.2f, width: "
+        //          "%.2f, height: %.2f}",
+        //          table_rect.x, table_rect.y, table_rect.width,
+        //          table_rect.height);
+        if (table_rect.x != self.table_rect.x or
+            table_rect.y != self.table_rect.y or
+            table_rect.width != self.table_rect.width or
+            table_rect.height != self.table_rect.height)
+        {
+            self.table_rect = table_rect;
+
+            rl.TraceLog(rl.LOG_DEBUG, ">>> [ Game_redraw ] - Update 'game.table_rect'");
+        }
     }
 
     ///
     ///
     ///
-    pub fn run(self: *const Game) void {
+    pub fn run(self: *Game) void {
         while (!rl.WindowShouldClose()) {
+
+            //
+            // Update game logic
+            //
+            self.logic();
+
             rl.BeginDrawing();
 
             //
