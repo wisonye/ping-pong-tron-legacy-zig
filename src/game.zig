@@ -1,25 +1,15 @@
 const std = @import("std");
+const rl = @cImport({
+    @cInclude("raylib.h");
+});
 const config = @import("config.zig");
 const player = @import("player.zig");
 const scoreboard = @import("scoreboard.zig");
 const print = std.debug.print;
+const types = @import("types.zig");
 const ball = @import("ball.zig");
+const table = @import("table.zig");
 const utils = @import("utils.zig");
-const rl = @cImport({
-    @cInclude("raylib.h");
-});
-
-///
-///
-///
-const GameState = enum(u8) {
-    GS_UNINIT = 0x01,
-    GS_INIT = 0x02,
-    GS_BEFORE_START = 0x03,
-    GS_PLAYING = 0x04,
-    GS_PLAYER_WINS = 0x05,
-    GS_PAUSE = 0x06,
-};
 
 ///
 ///
@@ -38,7 +28,7 @@ pub const Game = struct {
     table_rect_before_screen_changed: rl.Rectangle,
     table_rect: rl.Rectangle,
     ball: ball.Ball,
-    state: GameState,
+    state: types.GameState,
     is_fullscreen: bool,
     is_player1_wins_last_round: bool,
     you_win_sound_effect: ?rl.Sound,
@@ -121,7 +111,7 @@ pub const Game = struct {
                 //
                 .alpha_mask = null,
             },
-            .state = GameState.GS_UNINIT,
+            .state = types.GameState.GS_UNINIT,
             .is_fullscreen = false,
             .is_player1_wins_last_round = false,
             .you_win_sound_effect = null,
@@ -187,7 +177,7 @@ pub const Game = struct {
         rl.HideCursor();
 
         // Set to `GS_BEFORE_START`
-        self.state = GameState.GS_BEFORE_START;
+        self.state = types.GameState.GS_BEFORE_START;
 
         //
         // As I want to draw the ball with gradient visual effects (like a halo)
@@ -274,7 +264,18 @@ pub const Game = struct {
         // Scoreboard
         //
         const sb_rect = self.scoreboard.redraw(&self.player1, &self.player2);
-        _ = sb_rect;
+
+        //
+        // Table
+        //
+        const table_rect = table.Table.redraw(
+            self.state,
+            self.is_player1_wins_last_round,
+            self.player1.name,
+            self.player2.name,
+            &sb_rect,
+        );
+        _ = table_rect;
     }
 
     ///
@@ -309,12 +310,12 @@ pub const Game = struct {
         //
         var state_buf: [20]u8 = undefined;
         const state_str = switch (self.state) {
-            GameState.GS_UNINIT => std.fmt.bufPrint(&state_buf, "GS_UNINIT", .{}) catch "",
-            GameState.GS_INIT => std.fmt.bufPrint(&state_buf, "GS_INIT", .{}) catch "",
-            GameState.GS_BEFORE_START => std.fmt.bufPrint(&state_buf, "GS_BEFORE_START", .{}) catch "",
-            GameState.GS_PLAYING => std.fmt.bufPrint(&state_buf, "GS_PLAYING", .{}) catch "",
-            GameState.GS_PLAYER_WINS => std.fmt.bufPrint(&state_buf, "GS_PLAYER_WINS", .{}) catch "",
-            GameState.GS_PAUSE => std.fmt.bufPrint(&state_buf, "GS_PAUSE", .{}) catch "",
+            types.GameState.GS_UNINIT => std.fmt.bufPrint(&state_buf, "GS_UNINIT", .{}) catch "",
+            types.GameState.GS_INIT => std.fmt.bufPrint(&state_buf, "GS_INIT", .{}) catch "",
+            types.GameState.GS_BEFORE_START => std.fmt.bufPrint(&state_buf, "GS_BEFORE_START", .{}) catch "",
+            types.GameState.GS_PLAYING => std.fmt.bufPrint(&state_buf, "GS_PLAYING", .{}) catch "",
+            types.GameState.GS_PLAYER_WINS => std.fmt.bufPrint(&state_buf, "GS_PLAYER_WINS", .{}) catch "",
+            types.GameState.GS_PAUSE => std.fmt.bufPrint(&state_buf, "GS_PAUSE", .{}) catch "",
         };
 
         //

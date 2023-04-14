@@ -3,10 +3,6 @@ const config = @import("config.zig");
 const player = @import("player.zig");
 const game_module = @import("game.zig").Game;
 const print = std.debug.print;
-// const c = @cImport({
-//     @cInclude("stdio.h");
-//     @cInclude("stdlib.h");
-// });
 
 ///
 ///
