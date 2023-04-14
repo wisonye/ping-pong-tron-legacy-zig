@@ -474,6 +474,21 @@ pub const Game = struct {
         // print("\n >>>> player_2_str: {s}", .{player_2_str});
 
         //
+        // Table rect
+        //
+        var table_rect_buf = [_:0]u8{0} ** 100;
+        const table_rect_str = std.fmt.bufPrint(
+            &table_rect_buf,
+            "\ttable_rect: {{x: {d:.2}, y: {d:.2}, width: {d:.2}, height: {d:.2}}}",
+            .{
+                self.table_rect.x,
+                self.table_rect.y,
+                self.table_rect.width,
+                self.table_rect.height,
+            },
+        ) catch "AAA";
+
+        //
         // Ball
         //
         var ball_buf: [1024]u8 = undefined;
@@ -533,8 +548,9 @@ pub const Game = struct {
         // Debug info
         //
         var debug_buf = [_:0]u8{0} ** 1024;
-        var debug_str = std.fmt.bufPrint(&debug_buf, "\n{{\n\tstate: {s}\n{s}\n{s}\n{s}\n}}", .{
+        var debug_str = std.fmt.bufPrint(&debug_buf, "\n{{\n\tstate: {s}\n{s}\n{s}\n{s}\n{s}\n}}", .{
             state_str,
+            table_rect_str,
             player_1_str,
             player_2_str,
             ball_str,
