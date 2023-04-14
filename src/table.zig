@@ -24,8 +24,8 @@ pub const Table = struct {
         const rect = rl.Rectangle{
             .x = config.TABLE_UI_MARGIN,
             .y = sb_rect_bottom + config.TABLE_UI_MARGIN,
-            .width = @intToFloat(u32, screen_width) - 2 * config.TABLE_UI_MARGIN,
-            .height = @intToFloat(u32, screen_height) - sb_rect_bottom - 2 * config.TABLE_UI_MARGIN,
+            .width = @intToFloat(f32, screen_width) - 2 * config.TABLE_UI_MARGIN,
+            .height = @intToFloat(f32, screen_height) - sb_rect_bottom - 2 * config.TABLE_UI_MARGIN,
         };
 
         return rect;
