@@ -23,9 +23,9 @@ pub const Scoreboard = struct {
         const rect = rl.Rectangle{
             .x = config.SCOREBOARD_UI_PADDING,
             .y = config.SCOREBOARD_UI_PADDING,
-            .width = screen_width - 2 * config.SCOREBOARD_UI_PADDING,
-            .height = @intToFloat(f32, screen_height *
-                (config.SCOREBOARD_UI_BORDER_HEIGHT_PERCENT / 100.0)),
+            .width = @intToFloat(f32, screen_width) - 2.0 * config.SCOREBOARD_UI_PADDING,
+            .height = @intToFloat(f32, screen_height) *
+                (@intToFloat(f32, config.SCOREBOARD_UI_BORDER_HEIGHT_PERCENT) / 100.0),
         };
 
         return rect;
