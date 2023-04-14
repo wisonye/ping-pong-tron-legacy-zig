@@ -50,19 +50,24 @@ pub const Player = struct {
     ///
     ///
     pub fn redraw(self: *const Self) void {
-        const racket_rect = self.default_racket.rect;
-
-        rl.DrawTexturePro(
-            self.default_racket.rect_texture.?,
-            // Texture rect to draw from
-            rl.Rectangle{ .x = 0.0, .y = 0.0, .width = config.RACKET_UI_WIDTH, .height = config.RACKET_UI_HEIGHT },
-            // Target rect to draw (orgin is TopLeft by default!!!)
-            racket_rect,
-            // Origin offset of the target rect to draw (TopLeft by default)
-            rl.Vector2{ .x = 0.0, .y = 0.0 },
-            0.0,
-            config.RACKET_UI_COLOR,
-        );
+        if (self.default_racket.rect_texture) |texture| {
+            rl.DrawTexturePro(
+                texture,
+                // Texture rect to draw from
+                rl.Rectangle{
+                    .x = 0.0,
+                    .y = 0.0,
+                    .width = config.RACKET_UI_WIDTH,
+                    .height = config.RACKET_UI_HEIGHT,
+                },
+                // Target rect to draw (orgin is TopLeft by default!!!)
+                self.default_racket.rect,
+                // Origin offset of the target rect to draw (TopLeft by default)
+                rl.Vector2{ .x = 0.0, .y = 0.0 },
+                0.0,
+                config.RACKET_UI_COLOR,
+            );
+        }
         // EndBlendMode();
 
         if (config.RACKET_UI_DRAW_DEBUG_BOUNDARY) {
