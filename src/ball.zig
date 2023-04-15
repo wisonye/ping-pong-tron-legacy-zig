@@ -1,6 +1,7 @@
 const rl = @cImport({
     @cInclude("raylib.h");
 });
+const std = @import("std");
 const config = @import("config.zig");
 const player = @import("player.zig");
 
@@ -124,7 +125,7 @@ pub const Ball = struct {
         //
         // Draw solid circle
         //
-        // DrawCircleV(ball.center, ball.radius, ball.color);
+        // DrawCircleV(self.center, self.radius, self.color);
 
         //
         // Draw ball with alpha mask
@@ -156,17 +157,17 @@ pub const Ball = struct {
         //
         // Draw lightning ball with texture png version
         //
-        // if (ball.enabled_lightning_ball) {
+        // if (self.enabled_lightning_ball) {
         //     BeginBlendMode(BLEND_ALPHA);
 
         //     DrawTexturePro(
-        //         ball.lightning_ball,
-        //         (Rectangle){0.0f, 0.0f, (float)ball.lightning_ball.width,
-        //                     (float)ball.lightning_ball.height},
-        //         (Rectangle){ball.center.x, ball.center.y, 2 * ball.radius,
-        //                     2 * ball.radius},
-        //         (Vector2){(float)(ball.radius), (float)(ball.radius)},
-        //         ball.lightning_ball_rotation_angle,
+        //         self.lightning_ball,
+        //         (Rectangle){0.0f, 0.0f, (float)self.lightning_self.width,
+        //                     (float)self.lightning_self.height},
+        //         (Rectangle){self.center.x, self.center.y, 2 * self.radius,
+        //                     2 * self.radius},
+        //         (Vector2){(float)(self.radius), (float)(self.radius)},
+        //         self.lightning_ball_rotation_angle,
         //         (Color){.r = 0xFF, .g = 0xFF, .b = 0xFF, .a = 0xFF});
 
         //     EndBlendMode();
@@ -194,7 +195,7 @@ pub const Ball = struct {
         var i: usize = 0;
         while (i < config.BALL_UI_LIGHTING_TAIL_PARTICLE_COUNT) {
             particles[i].position = rl.Vector2{ .x = 0, .y = 0 };
-            // particles[i].color = ball.color;
+            // particles[i].color = self.color;
 
             // Init `alpha` value, it affects how light the particle at the
             // beginning
@@ -220,18 +221,196 @@ pub const Ball = struct {
         is_player1_win: *bool,
         is_player2_win: *bool,
     ) void {
-        _ = is_player2_win;
-        _ = is_player1_win;
-        _ = player2;
-        _ = player1;
-        _ = table_rect;
-        _ = self;
+
+        //
+        // Next ball position
+        //
+        self.center.x += rl.GetFrameTime() * self.velocity_x;
+        self.center.y += rl.GetFrameTime() * self.velocity_y;
+
+        //
+        // Ball bouncing in table
+        //
+
+        // If `ball` hit the top of `table_rect`
+        if (self.center.y - self.radius <= table_rect.y) {
+            self.center.y = table_rect.y + self.radius;
+            self.velocity_y *= -1; // Flip the velocity_y direction
+        }
+        // If `ball` hit the bottom of `table_rect`
+        else if (self.center.y + self.radius >=
+            table_rect.y + table_rect.height)
+        {
+            self.center.y = table_rect.y + table_rect.height - self.radius;
+            self.velocity_y *= -1; // Flip the velocity_y direction
+        }
+
+        //
+        // Win or lose
+        //
+
+        // If `ball` hit the left of `table_rect`
+        if (self.center.x <= table_rect.x) {
+            is_player2_win.* = true;
+            return;
+        }
+        // If `ball` hit the right of `table_rect`
+        else if (self.center.x >= table_rect.x + table_rect.width) {
+            is_player1_win.* = true;
+            return;
+        }
+
+        //
+        // Hit player's racket to increase the velocity
+        //
+        const ball_left_point = rl.Vector2{
+            .x = self.center.x - self.radius,
+            .y = self.center.y,
+        };
+        const ball_right_point = rl.Vector2{
+            .x = self.center.x + self.radius,
+            .y = self.center.y,
+        };
+
+        // If `ball` hit the left player's racket
+        if (rl.CheckCollisionPointRec(ball_left_point, player1.default_racket.rect)) {
+            rl.TraceLog(rl.LOG_DEBUG, ">>> [ Ball_update ] - Hit player 1 racket");
+            self.center.x = player1.default_racket.rect.x +
+                player1.default_racket.rect.width + self.radius;
+            self.velocity_x *= -1; // Flip the velocity_x direction
+            self.current_hits += 1;
+            if (self.hit_racket_sound_effect) |sound| {
+                rl.PlaySound(sound);
+            }
+        }
+        // If `ball` hit the right player's racket
+        else if (rl.CheckCollisionPointRec(ball_right_point, player2.default_racket.rect)) {
+            rl.TraceLog(rl.LOG_DEBUG, ">>> [ Ball_update ] - Hit player 2 racket");
+            self.center.x = player2.default_racket.rect.x - self.radius;
+            self.velocity_x *= -1; // Flip the velocity_x direction
+            self.current_hits += 1;
+            if (self.hit_racket_sound_effect) |sound| {
+                rl.PlaySound(sound);
+            }
+        }
+
+        if (self.current_hits >= config.BALL_UI_HITS_BEFORE_INCREASE_VELOCITY) {
+            // Increase `current_velocities_increase `
+            self.current_velocities_increase += 1;
+
+            // Reset
+            self.current_hits = 0;
+
+            // Increase speed
+            self.velocity_x = if (self.velocity_x > 0) self.velocity_x + config.BALL_UI_VELOCITY_ACCELERATION else self.velocity_x - config.BALL_UI_VELOCITY_ACCELERATION;
+            self.velocity_y = if (self.velocity_y > 0) self.velocity_y + config.BALL_UI_VELOCITY_ACCELERATION else self.velocity_y - config.BALL_UI_VELOCITY_ACCELERATION;
+
+            var hit_debug_buf = [_:0]u8{0} ** 200;
+            const hit_debug_str = std.fmt.bufPrint(
+                &hit_debug_buf,
+                "{d} hits happens, increase velocity to (x: {d:.2}, y: {d:.2}), current_velocities_increase: {d}",
+                .{
+                    config.BALL_UI_HITS_BEFORE_INCREASE_VELOCITY,
+                    self.velocity_x,
+                    self.velocity_y,
+                    self.current_velocities_increase,
+                },
+            ) catch "";
+            rl.TraceLog(
+                rl.LOG_DEBUG,
+                ">>> [ Ball_update ] - %s",
+                @ptrCast([*c]const u8, hit_debug_str),
+            );
+
+            //
+            // Enable fireball
+            //
+            if (!self.enabled_fireball and
+                self.current_velocities_increase >=
+                config.BALL_UI_VELOCITIES_INCREASE_TO_ENABLE_FIREBALL)
+            {
+                self.enabled_fireball = true;
+                if (self.enable_fireball_sound_effect) |sound| {
+                    rl.PlaySound(sound);
+                }
+                rl.TraceLog(rl.LOG_DEBUG, ">>> [ Ball_update ] - Enabled fireball");
+            }
+
+            //
+            // Enable lightning ball
+            //
+            if (!self.enabled_lightning_ball and
+                self.current_velocities_increase >=
+                config.BALL_UI_VELOCITIES_INCREASE_TO_ENABLE_LIGHTNING_BALL)
+            {
+                self.enabled_lightning_ball = true;
+                if (self.enable_lightning_ball_sound_effect) |sound| {
+                    rl.PlaySound(sound);
+                }
+                rl.TraceLog(rl.LOG_DEBUG, ">>> [ Ball_update ] - Enabled lightning ball");
+
+                // Reduce ball radius
+                self.radius = config.BALL_UI_LIGHTING_BALL_RADIUS;
+
+                // Reduce the tail particle size
+                var particles = self.lighting_tail.particles;
+                var i: usize = 0;
+                while (i < config.BALL_UI_LIGHTING_TAIL_PARTICLE_COUNT) {
+                    // It affects how big the particle will be: how many percentage
+                    // of the ball size: 0.0 ~ 1.0 (0 ~ 100%)
+                    particles[i].size =
+                        config.BALL_UI_LIGHTING_TAIL_PRATICLE_SIZE_FOR_LIGHTNING_BALL;
+
+                    i += 1;
+                }
+            }
+        }
+
+        //
+        // Update lightning ball attriubtes
+        //
+        if (self.enabled_lightning_ball) {
+            self.lightning_ball_rotation_angle += 32.0;
+            if (self.lightning_ball_rotation_angle > 360) {
+                self.lightning_ball_rotation_angle = 0;
+            }
+        }
     }
 
     ///
     ///
     ///
     pub fn update_lighting_tail(self: *Ball) void {
-        _ = self;
+        //
+        // Activate one particle every frame and Update active particles
+        // NOTE: Particles initial position should be mouse position when
+        // activated NOTE: Particles fall down with gravity and rotation... and
+        // disappear after 2 seconds (alpha = 0) NOTE: When a particle
+        // disappears, active = false and it can be reused.
+        //
+        var particles = self.lighting_tail.particles;
+
+        var i: usize = 0;
+        while (i < config.BALL_UI_LIGHTING_TAIL_PARTICLE_COUNT) {
+            if (!particles[i].active) {
+                particles[i].active = true;
+                particles[i].alpha = config.BALL_UI_LIGHTING_TAIL_PRATICLE_INIT_ALPHA;
+                particles[i].position = self.center;
+                i = config.BALL_UI_LIGHTING_TAIL_PARTICLE_COUNT;
+            }
+            i += 1;
+        }
+
+        var index: usize = 0;
+        while (index < config.BALL_UI_LIGHTING_TAIL_PARTICLE_COUNT) {
+            if (particles[index].active) {
+                // particles[i].position.y += gravity / 2;
+                particles[index].alpha -= 0.05;
+
+                if (particles[index].alpha <= 0.0) particles[index].active = false;
+            }
+
+            index += 1;
+        }
     }
 };
