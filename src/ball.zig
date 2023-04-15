@@ -217,8 +217,8 @@ pub const Ball = struct {
         table_rect: *const rl.Rectangle,
         player1: *const player.Player,
         player2: *const player.Player,
-        is_player1_win: bool,
-        is_player2_win: bool,
+        is_player1_win: *bool,
+        is_player2_win: *bool,
     ) void {
         _ = is_player2_win;
         _ = is_player1_win;

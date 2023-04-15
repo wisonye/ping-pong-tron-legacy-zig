@@ -6,7 +6,7 @@ const config = @import("config.zig");
 const player = @import("player.zig");
 const Scoreboard = @import("scoreboard.zig").Scoreboard;
 const print = std.debug.print;
-const types = @import("types.zig");
+const GameState = @import("types.zig").GameState;
 const Ball = @import("ball.zig").Ball;
 const BallLightingTail = Ball.BallLightingTail;
 const BallTailParticle = Ball.BallTailParticle;
@@ -30,7 +30,7 @@ pub const Game = struct {
     table_rect_before_screen_changed: rl.Rectangle,
     table_rect: rl.Rectangle,
     ball: Ball,
-    state: types.GameState,
+    state: GameState,
     is_fullscreen: bool,
     is_player1_wins_last_round: bool,
     you_win_sound_effect: ?rl.Sound,
@@ -123,7 +123,7 @@ pub const Game = struct {
                 //
                 .alpha_mask = null,
             },
-            .state = types.GameState.GS_UNINIT,
+            .state = GameState.GS_UNINIT,
             .is_fullscreen = false,
             .is_player1_wins_last_round = false,
             .you_win_sound_effect = null,
@@ -189,7 +189,7 @@ pub const Game = struct {
         rl.HideCursor();
 
         // Set to `GS_BEFORE_START`
-        self.state = types.GameState.GS_BEFORE_START;
+        self.state = GameState.GS_BEFORE_START;
 
         //
         // As I want to draw the ball with gradient visual effects (like a halo)
@@ -303,74 +303,89 @@ pub const Game = struct {
         // Press 'space' to start game
         //
         if (rl.IsKeyPressed(rl.KEY_SPACE) and
-            (self.state == types.GameState.GS_BEFORE_START or self.state == types.GameState.GS_PLAYER_WINS))
+            (self.state == GameState.GS_BEFORE_START or self.state == GameState.GS_PLAYER_WINS))
         {
-            self.state = types.GameState.GS_PLAYING;
+            self.state = GameState.GS_PLAYING;
             self.ball.restart(&self.table_rect);
-            self.player1.update_racket(&self.table_rect, player.RacketUpdateType.RUT_RESET);
-            self.player2.update_racket(&self.table_rect, player.RacketUpdateType.RUT_RESET);
+            self.player1.update_racket(
+                &self.table_rect,
+                player.RacketUpdateType.RUT_RESET,
+            );
+            self.player2.update_racket(
+                &self.table_rect,
+                player.RacketUpdateType.RUT_RESET,
+            );
             self.print_debug_info();
         }
 
-        // //
-        // // Game is playing, update all states
-        // //
-        // if (game.state == GS_PLAYING) {
-        //     // Update ball
-        //     Ball *ball = &game.ball;
-        //     bool is_player1_win = false;
-        //     bool is_player2_win = false;
-        //     Ball_update(ball, &game.table_rect, &game.player1, &game.player2,
-        //                 &is_player1_win, &is_player2_win);
-        //     if (is_player1_win) {
-        //         game.player1.score += 1;
-        //         game.state = GS_PLAYER_WINS;
-        //         game.is_player1_wins_last_round = true;
-        //         PlaySound(game.you_win_sound_effect);
-        //         return;
-        //     } else if (is_player2_win) {
-        //         game.player2.score += 1;
-        //         game.state = GS_PLAYER_WINS;
-        //         game.is_player1_wins_last_round = false;
-        //         PlaySound(game.you_win_sound_effect);
-        //         return;
-        //     }
+        //
+        // Game is playing, update all states
+        //
+        if (self.state == GameState.GS_PLAYING) {
+            // Update ball
+            var is_player1_win = false;
+            var is_player2_win = false;
+            self.ball.update(
+                &self.table_rect,
+                &self.player1,
+                &self.player2,
+                &is_player1_win,
+                &is_player2_win,
+            );
+            if (is_player1_win) {
+                self.player1.score += 1;
+                self.state = GameState.GS_PLAYER_WINS;
+                self.is_player1_wins_last_round = true;
+                if (self.you_win_sound_effect) |sound| {
+                    rl.PlaySound(sound);
+                }
+                return;
+            } else if (is_player2_win) {
+                self.player2.score += 1;
+                self.state = GameState.GS_PLAYER_WINS;
+                self.is_player1_wins_last_round = false;
+                if (self.you_win_sound_effect) |sound| {
+                    rl.PlaySound(sound);
+                }
+                return;
+            }
 
-        //     // Update lighting tail
-        //     Ball_update_lighting_tail(ball);
+            // Update lighting tail
+            self.ball.update_lighting_tail();
 
-        //     /* TraceLog(LOG_DEBUG, */
-        //     /*          ">>> [ Game_logic ] - ball center: { x: %.2f, y: %.2f, " */
-        //     /*          "speed_x: %.2f, speed_Y: %.2f}", */
-        //     /*          ball.center.x, ball.center.y, ball.speed_x,
-        //      * ball.speed_y); */
+            //
+            // Update racket postion
+            //
+            if (rl.IsKeyDown(config.PLAYER_2_UP_KEY)) {
+                self.player2.update_racket(
+                    &self.table_rect,
+                    player.RacketUpdateType.RUT_MOVE_UP,
+                );
+            }
+            if (rl.IsKeyDown(config.PLAYER_2_DOWN_KEY)) {
+                self.player2.update_racket(
+                    &self.table_rect,
+                    player.RacketUpdateType.RUT_MOVE_DOWN,
+                );
+            }
+            if (rl.IsKeyDown(config.PLAYER_1_UP_KEY)) {
+                self.player1.update_racket(
+                    &self.table_rect,
+                    player.RacketUpdateType.RUT_MOVE_UP,
+                );
+            }
+            if (rl.IsKeyDown(config.PLAYER_1_DOWN_KEY)) {
+                self.player1.update_racket(
+                    &self.table_rect,
+                    player.RacketUpdateType.RUT_MOVE_DOWN,
+                );
+            }
+        }
 
-        //     //
-        //     // Update racket postion
-        //     //
-        //     if (IsKeyDown(PLAYER_2_UP_KEY)) {
-        //         Player_update_racket(&game.player2, &game.table_rect,
-        //                              RUT_MOVE_UP);
-        //     }
-        //     if (IsKeyDown(PLAYER_2_DOWN_KEY)) {
-        //         Player_update_racket(&game.player2, &game.table_rect,
-        //                              RUT_MOVE_DOWN);
-        //     }
-        //     if (IsKeyDown(PLAYER_1_UP_KEY)) {
-        //         Player_update_racket(&game.player1, &game.table_rect,
-        //                              RUT_MOVE_UP);
-        //     }
-        //     if (IsKeyDown(PLAYER_1_DOWN_KEY)) {
-        //         Player_update_racket(&game.player1, &game.table_rect,
-        //                              RUT_MOVE_DOWN);
-        //     }
-        // }
-
-        // //
-        // // Player wins, update score
-        // //
-        // if (game.state == GS_PLAYING) {
-        // }
+        //
+        // Player wins, update score
+        //
+        if (self.state == GameState.GS_PLAYING) {}
     }
 
     ///
@@ -462,12 +477,12 @@ pub const Game = struct {
         //
         var state_buf: [20]u8 = undefined;
         const state_str = switch (self.state) {
-            types.GameState.GS_UNINIT => std.fmt.bufPrint(&state_buf, "GS_UNINIT", .{}) catch "",
-            types.GameState.GS_INIT => std.fmt.bufPrint(&state_buf, "GS_INIT", .{}) catch "",
-            types.GameState.GS_BEFORE_START => std.fmt.bufPrint(&state_buf, "GS_BEFORE_START", .{}) catch "",
-            types.GameState.GS_PLAYING => std.fmt.bufPrint(&state_buf, "GS_PLAYING", .{}) catch "",
-            types.GameState.GS_PLAYER_WINS => std.fmt.bufPrint(&state_buf, "GS_PLAYER_WINS", .{}) catch "",
-            types.GameState.GS_PAUSE => std.fmt.bufPrint(&state_buf, "GS_PAUSE", .{}) catch "",
+            GameState.GS_UNINIT => std.fmt.bufPrint(&state_buf, "GS_UNINIT", .{}) catch "",
+            GameState.GS_INIT => std.fmt.bufPrint(&state_buf, "GS_INIT", .{}) catch "",
+            GameState.GS_BEFORE_START => std.fmt.bufPrint(&state_buf, "GS_BEFORE_START", .{}) catch "",
+            GameState.GS_PLAYING => std.fmt.bufPrint(&state_buf, "GS_PLAYING", .{}) catch "",
+            GameState.GS_PLAYER_WINS => std.fmt.bufPrint(&state_buf, "GS_PLAYER_WINS", .{}) catch "",
+            GameState.GS_PAUSE => std.fmt.bufPrint(&state_buf, "GS_PAUSE", .{}) catch "",
         };
 
         //
