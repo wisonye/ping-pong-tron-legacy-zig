@@ -403,8 +403,7 @@ pub const Game = struct {
         //
         // Ball
         //
-        // Ball *ball = &game.ball;
-        // Ball_redraw(ball);
+        self.ball.redraw();
 
         //
         // Update `game.table_rect` if changed

@@ -46,7 +46,131 @@ pub const Ball = struct {
     ///
     ///
     pub fn redraw(self: *const Ball) void {
-        _ = self;
+        if (self.center.x == -1 or self.center.y == -1) return;
+
+        //
+        // // Color blending modes (pre-defined)
+        // typedef enum {
+        // BLEND_ALPHA = 0,         // Blend textures considering alpha (default)
+        // BLEND_ADDITIVE,          // Blend textures adding colors
+        // BLEND_MULTIPLIED,        // Blend textures multiplying colors
+        // BLEND_ADD_COLORS,        // Blend textures adding colors (alternative)
+        // BLEND_SUBTRACT_COLORS,   // Blend textures subtracting colors
+        // (alternative) BLEND_ALPHA_PREMULTIPLY, // Blend premultiplied textures
+        // considering alpha BLEND_CUSTOM             // Blend textures using custom
+        // src/dst factors (use rlSetBlendMode()) } BlendMode;
+        //
+        //
+        // Above is the supported `blend mode` which affects how blending works,
+        // `BLEND_ADDTIVE` is the only effect I wanted.
+        //
+        rl.BeginBlendMode(rl.BLEND_ADDITIVE);
+
+        //
+        // Draw lighting tail
+        //
+        const particles = self.lighting_tail.particles;
+
+        var ball_and_lighting_tail_color = if (self.enabled_fireball) config.BALL_UI_FIREBALL_COLOR else config.BALL_UI_BALL_COLOR;
+
+        if (self.enabled_lightning_ball) {
+            ball_and_lighting_tail_color = config.BALL_UI_LIGHTNING_BALL_COLOR;
+        }
+
+        var i: usize = 0;
+        while (i < config.BALL_UI_LIGHTING_TAIL_PARTICLE_COUNT) {
+            if (self.lighting_tail.particles[i].active)
+                // TraceLog(LOG_DEBUG,
+                //          ">>> [ Ball_redraw ] - draw lighting ball particle, "
+                //          "index: {%u}",
+                //          i);
+                rl.DrawTexturePro(
+                    self.alpha_mask.?,
+                    rl.Rectangle{
+                        .x = 0.0,
+                        .y = 0.0,
+                        .width = @intToFloat(f32, self.alpha_mask.?.width),
+                        .height = @intToFloat(f32, self.alpha_mask.?.height),
+                    },
+                    rl.Rectangle{
+                        .x = particles[i].position.x,
+                        .y = particles[i].position.y,
+                        .width = @intToFloat(
+                            f32,
+                            self.alpha_mask.?.width,
+                        ) * particles[i].size,
+                        .height = @intToFloat(
+                            f32,
+                            self.alpha_mask.?.height,
+                        ) * particles[i].size,
+                    },
+                    rl.Vector2{
+                        .x = @intToFloat(
+                            f32,
+                            self.alpha_mask.?.width,
+                        ) * particles[i].size / 2.0,
+                        .y = @intToFloat(
+                            f32,
+                            self.alpha_mask.?.height,
+                        ) * particles[i].size / 2.0,
+                    },
+                    0.0,
+
+                    rl.Fade(ball_and_lighting_tail_color, particles[i].alpha),
+                );
+            i += 1;
+        }
+
+        //
+        // Draw solid circle
+        //
+        // DrawCircleV(ball.center, ball.radius, ball.color);
+
+        //
+        // Draw ball with alpha mask
+        //
+        rl.DrawTexturePro(
+            self.alpha_mask.?,
+            rl.Rectangle{
+                .x = 0.0,
+                .y = 0.0,
+                .width = @intToFloat(f32, self.alpha_mask.?.width),
+                .height = @intToFloat(f32, self.alpha_mask.?.height),
+            },
+            rl.Rectangle{
+                .x = self.center.x,
+                .y = self.center.y,
+                .width = @intToFloat(f32, self.alpha_mask.?.width),
+                .height = @intToFloat(f32, self.alpha_mask.?.height),
+            },
+            rl.Vector2{
+                .x = @intToFloat(f32, self.alpha_mask.?.width) / 2.0,
+                .y = @intToFloat(f32, self.alpha_mask.?.height) / 2.0,
+            },
+            0.0,
+            ball_and_lighting_tail_color,
+        );
+
+        rl.EndBlendMode();
+
+        //
+        // Draw lightning ball with texture png version
+        //
+        // if (ball.enabled_lightning_ball) {
+        //     BeginBlendMode(BLEND_ALPHA);
+
+        //     DrawTexturePro(
+        //         ball.lightning_ball,
+        //         (Rectangle){0.0f, 0.0f, (float)ball.lightning_ball.width,
+        //                     (float)ball.lightning_ball.height},
+        //         (Rectangle){ball.center.x, ball.center.y, 2 * ball.radius,
+        //                     2 * ball.radius},
+        //         (Vector2){(float)(ball.radius), (float)(ball.radius)},
+        //         ball.lightning_ball_rotation_angle,
+        //         (Color){.r = 0xFF, .g = 0xFF, .b = 0xFF, .a = 0xFF});
+
+        //     EndBlendMode();
+        // }
     }
 
     ///
