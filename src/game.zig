@@ -4,10 +4,12 @@ const rl = @cImport({
 });
 const config = @import("config.zig");
 const player = @import("player.zig");
-const scoreboard = @import("scoreboard.zig");
+const Scoreboard = @import("scoreboard.zig").Scoreboard;
 const print = std.debug.print;
 const types = @import("types.zig");
-const ball = @import("ball.zig");
+const Ball = @import("ball.zig").Ball;
+const BallLightingTail = Ball.BallLightingTail;
+const BallTailParticle = Ball.BallTailParticle;
 const table = @import("table.zig");
 const utils = @import("utils.zig");
 
@@ -24,10 +26,10 @@ const MiscSettings = struct {
 pub const Game = struct {
     player1: player.Player,
     player2: player.Player,
-    scoreboard: scoreboard.Scoreboard,
+    scoreboard: Scoreboard,
     table_rect_before_screen_changed: rl.Rectangle,
     table_rect: rl.Rectangle,
-    ball: ball.Ball,
+    ball: Ball,
     state: types.GameState,
     is_fullscreen: bool,
     is_player1_wins_last_round: bool,
@@ -74,7 +76,7 @@ pub const Game = struct {
                     .rect_texture = null,
                 },
             },
-            .scoreboard = scoreboard.Scoreboard{},
+            .scoreboard = Scoreboard{},
             .table_rect_before_screen_changed = rl.Rectangle{
                 .x = 0,
                 .y = 0,
@@ -87,7 +89,7 @@ pub const Game = struct {
                 .width = 0,
                 .height = 0,
             },
-            .ball = ball.Ball{
+            .ball = Ball{
                 .center = rl.Vector2{ .x = -1.0, .y = -1.0 },
                 .radius = ball_radius,
                 .velocity_x = config.BALL_UI_BALL_VELOCITY_X,
@@ -101,7 +103,17 @@ pub const Game = struct {
                 .enable_fireball_sound_effect = null,
                 .enable_lightning_ball_sound_effect = null,
                 .hit_racket_sound_effect = null,
-                .lighting_tail = null,
+                .lighting_tail = BallLightingTail{
+                    .particles = [1]BallTailParticle{BallTailParticle{
+                        .position = rl.Vector2{
+                            .x = 0.0,
+                            .y = 0.0,
+                        },
+                        .alpha = 0.0,
+                        .size = 0.0,
+                        .active = false,
+                    }} ** config.BALL_UI_LIGHTING_TAIL_PARTICLE_COUNT,
+                },
 
                 //
                 // `alpha_mask` is a black and white color image that uses for
@@ -271,7 +283,7 @@ pub const Game = struct {
             //
             // Update `game.table_rect`
             //
-            const new_sb_rect = scoreboard.Scoreboard.recalculate_rect();
+            const new_sb_rect = Scoreboard.recalculate_rect();
             self.table_rect = table.Table.recalculate_rect(&new_sb_rect);
 
             //
@@ -294,7 +306,7 @@ pub const Game = struct {
             (self.state == types.GameState.GS_BEFORE_START or self.state == types.GameState.GS_PLAYER_WINS))
         {
             self.state = types.GameState.GS_PLAYING;
-            // Ball_restart(&game.ball, &game.table_rect);
+            self.ball.restart(&self.table_rect);
             self.player1.update_racket(&self.table_rect, player.RacketUpdateType.RUT_RESET);
             self.player2.update_racket(&self.table_rect, player.RacketUpdateType.RUT_RESET);
             self.print_debug_info();

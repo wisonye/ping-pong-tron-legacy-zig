@@ -22,7 +22,7 @@ pub const Ball = struct {
     enable_fireball_sound_effect: ?rl.Sound,
     enable_lightning_ball_sound_effect: ?rl.Sound,
     hit_racket_sound_effect: ?rl.Sound,
-    lighting_tail: ?BallLightingTail,
+    lighting_tail: BallLightingTail,
 
     ///
     /// Particle structure with basic data
@@ -52,9 +52,37 @@ pub const Ball = struct {
     ///
     ///
     ///
-    pub fn restart(self: *const Ball, table_rect: *const rl.Rectangle) void {
-        _ = table_rect;
-        _ = self;
+    pub fn restart(self: *Ball, table_rect: *const rl.Rectangle) void {
+        self.center = rl.Vector2{
+            .x = table_rect.x + ((table_rect.width - self.radius) / 2),
+            .y = table_rect.y + ((table_rect.height - self.radius) / 2),
+        };
+
+        self.velocity_x = config.BALL_UI_BALL_VELOCITY_X;
+        self.velocity_y = config.BALL_UI_BALL_VELOCITY_Y;
+        self.current_hits = 0;
+        self.current_velocities_increase = 0;
+        self.enabled_fireball = false;
+        self.enabled_lightning_ball = false;
+
+        var particles = self.lighting_tail.particles;
+
+        var i: usize = 0;
+        while (i < config.BALL_UI_LIGHTING_TAIL_PARTICLE_COUNT) {
+            particles[i].position = rl.Vector2{ .x = 0, .y = 0 };
+            // particles[i].color = ball.color;
+
+            // Init `alpha` value, it affects how light the particle at the
+            // beginning
+            particles[i].alpha = config.BALL_UI_LIGHTING_TAIL_PRATICLE_INIT_ALPHA;
+
+            // It affects how big the particle will be: how many percentage of the
+            // ball size: 0.0 ~ 1.0 (0 ~ 100%)
+            particles[i].size = config.BALL_UI_LIGHTING_TAIL_PRATICLE_SIZE;
+            particles[i].active = false;
+
+            i += 1;
+        }
     }
 
     ///
