@@ -70,7 +70,7 @@ pub const Ball = struct {
         //
         // Draw lighting tail
         //
-        const particles = self.lighting_tail.particles;
+        const p = &self.lighting_tail.particles;
 
         var ball_and_lighting_tail_color = if (self.enabled_fireball) config.BALL_UI_FIREBALL_COLOR else config.BALL_UI_BALL_COLOR;
 
@@ -78,48 +78,54 @@ pub const Ball = struct {
             ball_and_lighting_tail_color = config.BALL_UI_LIGHTNING_BALL_COLOR;
         }
 
-        var i: usize = 0;
-        while (i < config.BALL_UI_LIGHTING_TAIL_PARTICLE_COUNT) {
-            if (self.lighting_tail.particles[i].active)
-                // TraceLog(LOG_DEBUG,
-                //          ">>> [ Ball_redraw ] - draw lighting ball particle, "
-                //          "index: {%u}",
-                //          i);
-                rl.DrawTexturePro(
-                    self.alpha_mask.?,
-                    rl.Rectangle{
-                        .x = 0.0,
-                        .y = 0.0,
-                        .width = @intToFloat(f32, self.alpha_mask.?.width),
-                        .height = @intToFloat(f32, self.alpha_mask.?.height),
-                    },
-                    rl.Rectangle{
-                        .x = particles[i].position.x,
-                        .y = particles[i].position.y,
-                        .width = @intToFloat(
-                            f32,
-                            self.alpha_mask.?.width,
-                        ) * particles[i].size,
-                        .height = @intToFloat(
-                            f32,
-                            self.alpha_mask.?.height,
-                        ) * particles[i].size,
-                    },
-                    rl.Vector2{
-                        .x = @intToFloat(
-                            f32,
-                            self.alpha_mask.?.width,
-                        ) * particles[i].size / 2.0,
-                        .y = @intToFloat(
-                            f32,
-                            self.alpha_mask.?.height,
-                        ) * particles[i].size / 2.0,
-                    },
-                    0.0,
+        if (self.alpha_mask) |ball_alpah_mask| {
+            var i: usize = 0;
+            while (i < config.BALL_UI_LIGHTING_TAIL_PARTICLE_COUNT) {
+                if (p[i].active) {
+                    // rl.TraceLog(
+                    //     rl.LOG_DEBUG,
+                    //     ">>> [ Ball_redraw ] - draw lighting ball particle, index: {%u}",
+                    //     i,
+                    // );
 
-                    rl.Fade(ball_and_lighting_tail_color, particles[i].alpha),
-                );
-            i += 1;
+                    rl.DrawTexturePro(
+                        ball_alpah_mask,
+                        rl.Rectangle{
+                            .x = 0.0,
+                            .y = 0.0,
+                            .width = @intToFloat(f32, self.alpha_mask.?.width),
+                            .height = @intToFloat(f32, self.alpha_mask.?.height),
+                        },
+                        rl.Rectangle{
+                            .x = p[i].position.x,
+                            .y = p[i].position.y,
+                            .width = @intToFloat(
+                                f32,
+                                self.alpha_mask.?.width,
+                            ) * p[i].size,
+                            .height = @intToFloat(
+                                f32,
+                                self.alpha_mask.?.height,
+                            ) * p[i].size,
+                        },
+                        rl.Vector2{
+                            .x = @intToFloat(
+                                f32,
+                                self.alpha_mask.?.width,
+                            ) * p[i].size / 2.0,
+                            .y = @intToFloat(
+                                f32,
+                                self.alpha_mask.?.height,
+                            ) * p[i].size / 2.0,
+                        },
+                        0.0,
+
+                        rl.Fade(ball_and_lighting_tail_color, p[i].alpha),
+                    );
+                }
+
+                i += 1;
+            }
         }
 
         //
@@ -153,25 +159,6 @@ pub const Ball = struct {
         );
 
         rl.EndBlendMode();
-
-        //
-        // Draw lightning ball with texture png version
-        //
-        // if (self.enabled_lightning_ball) {
-        //     BeginBlendMode(BLEND_ALPHA);
-
-        //     DrawTexturePro(
-        //         self.lightning_ball,
-        //         (Rectangle){0.0f, 0.0f, (float)self.lightning_self.width,
-        //                     (float)self.lightning_self.height},
-        //         (Rectangle){self.center.x, self.center.y, 2 * self.radius,
-        //                     2 * self.radius},
-        //         (Vector2){(float)(self.radius), (float)(self.radius)},
-        //         self.lightning_ball_rotation_angle,
-        //         (Color){.r = 0xFF, .g = 0xFF, .b = 0xFF, .a = 0xFF});
-
-        //     EndBlendMode();
-        // }
     }
 
     ///
@@ -190,21 +177,21 @@ pub const Ball = struct {
         self.enabled_fireball = false;
         self.enabled_lightning_ball = false;
 
-        var particles = self.lighting_tail.particles;
+        const p = &self.lighting_tail.particles;
 
         var i: usize = 0;
         while (i < config.BALL_UI_LIGHTING_TAIL_PARTICLE_COUNT) {
-            particles[i].position = rl.Vector2{ .x = 0, .y = 0 };
+            p[i].position = rl.Vector2{ .x = 0, .y = 0 };
             // particles[i].color = self.color;
 
             // Init `alpha` value, it affects how light the particle at the
             // beginning
-            particles[i].alpha = config.BALL_UI_LIGHTING_TAIL_PRATICLE_INIT_ALPHA;
+            p[i].alpha = config.BALL_UI_LIGHTING_TAIL_PRATICLE_INIT_ALPHA;
 
             // It affects how big the particle will be: how many percentage of the
             // ball size: 0.0 ~ 1.0 (0 ~ 100%)
-            particles[i].size = config.BALL_UI_LIGHTING_TAIL_PRATICLE_SIZE;
-            particles[i].active = false;
+            p[i].size = config.BALL_UI_LIGHTING_TAIL_PRATICLE_SIZE;
+            p[i].active = false;
 
             i += 1;
         }
@@ -353,12 +340,12 @@ pub const Ball = struct {
                 self.radius = config.BALL_UI_LIGHTING_BALL_RADIUS;
 
                 // Reduce the tail particle size
-                var particles = self.lighting_tail.particles;
+                const p = &self.lighting_tail.particles;
                 var i: usize = 0;
                 while (i < config.BALL_UI_LIGHTING_TAIL_PARTICLE_COUNT) {
                     // It affects how big the particle will be: how many percentage
                     // of the ball size: 0.0 ~ 1.0 (0 ~ 100%)
-                    particles[i].size =
+                    p[i].size =
                         config.BALL_UI_LIGHTING_TAIL_PRATICLE_SIZE_FOR_LIGHTNING_BALL;
 
                     i += 1;
@@ -388,14 +375,16 @@ pub const Ball = struct {
         // disappear after 2 seconds (alpha = 0) NOTE: When a particle
         // disappears, active = false and it can be reused.
         //
-        var particles = self.lighting_tail.particles;
+        var p = &self.lighting_tail.particles;
 
         var i: usize = 0;
         while (i < config.BALL_UI_LIGHTING_TAIL_PARTICLE_COUNT) {
-            if (!particles[i].active) {
-                particles[i].active = true;
-                particles[i].alpha = config.BALL_UI_LIGHTING_TAIL_PRATICLE_INIT_ALPHA;
-                particles[i].position = self.center;
+            if (!p[i].active) {
+                p[i].active = true;
+                p[i].alpha = config.BALL_UI_LIGHTING_TAIL_PRATICLE_INIT_ALPHA;
+                p[i].position = self.center;
+
+                // break the loop
                 i = config.BALL_UI_LIGHTING_TAIL_PARTICLE_COUNT;
             }
             i += 1;
@@ -403,11 +392,13 @@ pub const Ball = struct {
 
         var index: usize = 0;
         while (index < config.BALL_UI_LIGHTING_TAIL_PARTICLE_COUNT) {
-            if (particles[index].active) {
+            if (p[index].active) {
                 // particles[i].position.y += gravity / 2;
-                particles[index].alpha -= 0.05;
+                p[index].alpha -= 0.05;
 
-                if (particles[index].alpha <= 0.0) particles[index].active = false;
+                if (p[index].alpha <= 0.0) {
+                    p[index].active = false;
+                }
             }
 
             index += 1;
