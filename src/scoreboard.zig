@@ -23,9 +23,9 @@ pub const Scoreboard = struct {
         const rect = rl.Rectangle{
             .x = config.SCOREBOARD_UI_PADDING,
             .y = config.SCOREBOARD_UI_PADDING,
-            .width = @intToFloat(f32, screen_width) - 2.0 * config.SCOREBOARD_UI_PADDING,
-            .height = @intToFloat(f32, screen_height) *
-                (@intToFloat(f32, config.SCOREBOARD_UI_BORDER_HEIGHT_PERCENT) / 100.0),
+            .width = @as(f32, @floatFromInt(screen_width)) - 2.0 * config.SCOREBOARD_UI_PADDING,
+            .height = @as(f32, @floatFromInt(screen_height)) *
+                (@as(f32, @floatFromInt(config.SCOREBOARD_UI_BORDER_HEIGHT_PERCENT)) / 100.0),
         };
 
         return rect;
@@ -48,7 +48,7 @@ pub const Scoreboard = struct {
         const name_font_size =
             rl.MeasureTextEx(
             font.*,
-            @ptrCast([*c]const u8, name),
+            @as([*c]const u8, @ptrCast(name)),
             config.SCOREBOARD_UI_PLAYER_NAME_FONT_SIZE,
             config.SCOREBOARD_UI_PLAYER_FONT_SPACE,
         );
@@ -59,7 +59,7 @@ pub const Scoreboard = struct {
         };
         rl.DrawTextEx(
             font.*,
-            @ptrCast([*c]const u8, name),
+            @as([*c]const u8, @ptrCast(name)),
             name_point,
             config.SCOREBOARD_UI_PLAYER_NAME_FONT_SIZE,
             config.SCOREBOARD_UI_PLAYER_FONT_SPACE,
@@ -84,7 +84,7 @@ pub const Scoreboard = struct {
         const score_font_size =
             rl.MeasureTextEx(
             font.*,
-            @ptrCast([*c]const u8, score_str),
+            @as([*c]const u8, @ptrCast(score_str)),
             config.SCOREBOARD_UI_PLAYER_SCORE_FONT_SIZE,
             config.SCOREBOARD_UI_PLAYER_FONT_SPACE,
         );
@@ -95,7 +95,7 @@ pub const Scoreboard = struct {
 
         rl.DrawTextEx(
             font.*,
-            @ptrCast([*c]const u8, score_str),
+            @as([*c]const u8, @ptrCast(score_str)),
             score_font_point,
             config.SCOREBOARD_UI_PLAYER_SCORE_FONT_SIZE,
             config.SCOREBOARD_UI_PLAYER_FONT_SPACE,
@@ -121,11 +121,11 @@ pub const Scoreboard = struct {
         const rect = rl.Rectangle{
             .x = config.SCOREBOARD_UI_PADDING,
             .y = config.SCOREBOARD_UI_PADDING,
-            .width = @intToFloat(f32, screen_width) - 2 * config.SCOREBOARD_UI_PADDING,
-            .height = @intToFloat(f32, screen_height) *
-                (@intToFloat(
+            .width = @as(f32, @floatFromInt(screen_width)) - 2 * config.SCOREBOARD_UI_PADDING,
+            .height = @as(f32, @floatFromInt(screen_height)) *
+                (@as(
                 f32,
-                config.SCOREBOARD_UI_BORDER_HEIGHT_PERCENT,
+                @floatFromInt(config.SCOREBOARD_UI_BORDER_HEIGHT_PERCENT),
             ) / 100.0),
         };
 

@@ -24,8 +24,8 @@ pub const Table = struct {
         const rect = rl.Rectangle{
             .x = config.TABLE_UI_MARGIN,
             .y = sb_rect_bottom + config.TABLE_UI_MARGIN,
-            .width = @intToFloat(f32, screen_width) - 2 * config.TABLE_UI_MARGIN,
-            .height = @intToFloat(f32, screen_height) - sb_rect_bottom - 2 * config.TABLE_UI_MARGIN,
+            .width = @as(f32, @floatFromInt(screen_width)) - 2 * config.TABLE_UI_MARGIN,
+            .height = @as(f32, @floatFromInt(screen_height)) - sb_rect_bottom - 2 * config.TABLE_UI_MARGIN,
         };
 
         return rect;
@@ -52,8 +52,8 @@ pub const Table = struct {
         const rect = rl.Rectangle{
             .x = config.TABLE_UI_MARGIN,
             .y = sb_rect_bottom + config.TABLE_UI_MARGIN,
-            .width = @intToFloat(f32, screen_width) - 2 * config.TABLE_UI_MARGIN,
-            .height = @intToFloat(f32, screen_height) - sb_rect_bottom - 2 * config.TABLE_UI_MARGIN,
+            .width = @as(f32, @floatFromInt(screen_width)) - 2 * config.TABLE_UI_MARGIN,
+            .height = @as(f32, @floatFromInt(screen_height)) - sb_rect_bottom - 2 * config.TABLE_UI_MARGIN,
         };
 
         rl.DrawRectangleLinesEx(
@@ -124,7 +124,7 @@ pub const Table = struct {
             // outside border
             const win_prompt_font_size = rl.MeasureTextEx(
                 font,
-                @ptrCast([*c]const u8, last_winner_name_str),
+                @as([*c]const u8, @ptrCast(last_winner_name_str)),
                 config.TABLE_UI_PLAYER_WINS_PROMPT_FONT_SIZE,
                 config.TABLE_UI_PLAYER_WINS_PROMPT_FONT_SPACE,
             );
@@ -169,7 +169,7 @@ pub const Table = struct {
             };
             rl.DrawTextEx(
                 font,
-                @ptrCast([*c]const u8, last_winner_name_str),
+                @as([*c]const u8, @ptrCast(last_winner_name_str)),
                 wins_prompt_font_point,
                 config.TABLE_UI_PLAYER_WINS_PROMPT_FONT_SIZE,
                 config.TABLE_UI_PLAYER_WINS_PROMPT_FONT_SPACE,

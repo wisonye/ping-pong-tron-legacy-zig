@@ -207,8 +207,8 @@ pub const Game = struct {
         //
         const density = 0.5;
         const ball_alpha_mask_image = rl.GenImageGradientRadial(
-            @floatToInt(c_int, self.ball.radius * 2),
-            @floatToInt(c_int, self.ball.radius * 2),
+            @intFromFloat(self.ball.radius * 2),
+            @intFromFloat(self.ball.radius * 2),
             density,
             rl.WHITE,
             rl.BLACK,
@@ -585,7 +585,7 @@ pub const Game = struct {
         rl.TraceLog(
             rl.LOG_DEBUG,
             ">>> [ Game.print_debug_info ] - %s",
-            @ptrCast([*c]const u8, debug_str),
+            @as([*c]const u8, @ptrCast(debug_str)),
         );
     }
 };

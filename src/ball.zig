@@ -93,30 +93,26 @@ pub const Ball = struct {
                         rl.Rectangle{
                             .x = 0.0,
                             .y = 0.0,
-                            .width = @intToFloat(f32, self.alpha_mask.?.width),
-                            .height = @intToFloat(f32, self.alpha_mask.?.height),
+                            .width = @floatFromInt(self.alpha_mask.?.width),
+                            .height = @floatFromInt(self.alpha_mask.?.height),
                         },
                         rl.Rectangle{
                             .x = p[i].position.x,
                             .y = p[i].position.y,
-                            .width = @intToFloat(
-                                f32,
+                            .width = @as(f32, @floatFromInt(
                                 self.alpha_mask.?.width,
-                            ) * p[i].size,
-                            .height = @intToFloat(
-                                f32,
+                            )) * p[i].size,
+                            .height = @as(f32, @floatFromInt(
                                 self.alpha_mask.?.height,
-                            ) * p[i].size,
+                            )) * p[i].size,
                         },
                         rl.Vector2{
-                            .x = @intToFloat(
-                                f32,
+                            .x = @as(f32, @floatFromInt(
                                 self.alpha_mask.?.width,
-                            ) * p[i].size / 2.0,
-                            .y = @intToFloat(
-                                f32,
+                            )) * p[i].size / 2.0,
+                            .y = @as(f32, @floatFromInt(
                                 self.alpha_mask.?.height,
-                            ) * p[i].size / 2.0,
+                            )) * p[i].size / 2.0,
                         },
                         0.0,
 
@@ -141,18 +137,18 @@ pub const Ball = struct {
             rl.Rectangle{
                 .x = 0.0,
                 .y = 0.0,
-                .width = @intToFloat(f32, self.alpha_mask.?.width),
-                .height = @intToFloat(f32, self.alpha_mask.?.height),
+                .width = @floatFromInt(self.alpha_mask.?.width),
+                .height = @floatFromInt(self.alpha_mask.?.height),
             },
             rl.Rectangle{
                 .x = self.center.x,
                 .y = self.center.y,
-                .width = @intToFloat(f32, self.alpha_mask.?.width),
-                .height = @intToFloat(f32, self.alpha_mask.?.height),
+                .width = @floatFromInt(self.alpha_mask.?.width),
+                .height = @floatFromInt(self.alpha_mask.?.height),
             },
             rl.Vector2{
-                .x = @intToFloat(f32, self.alpha_mask.?.width) / 2.0,
-                .y = @intToFloat(f32, self.alpha_mask.?.height) / 2.0,
+                .x = @as(f32, @floatFromInt(self.alpha_mask.?.width)) / 2.0,
+                .y = @as(f32, @floatFromInt(self.alpha_mask.?.height)) / 2.0,
             },
             0.0,
             ball_and_lighting_tail_color,
@@ -306,7 +302,7 @@ pub const Ball = struct {
             rl.TraceLog(
                 rl.LOG_DEBUG,
                 ">>> [ Ball_update ] - %s",
-                @ptrCast([*c]const u8, hit_debug_str),
+                @as([*c]const u8, @ptrCast(hit_debug_str)),
             );
 
             //
